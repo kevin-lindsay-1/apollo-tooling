@@ -3,9 +3,7 @@ import {
   NotificationHandler,
   PublishDiagnosticsParams
 } from "vscode-languageserver";
-import Uri from "vscode-uri";
 import { QuickPickItem } from "vscode";
-
 import { GraphQLProject, DocumentUri } from "./project/base";
 import { dirname } from "path";
 import * as fg from "glob";
@@ -24,10 +22,12 @@ import URI from "vscode-uri";
 export interface WorkspaceConfig {
   clientIdentity?: ClientIdentity;
 }
+
 export class GraphQLWorkspace {
   private _onDiagnostics?: NotificationHandler<PublishDiagnosticsParams>;
-  private _onDecorations?: (any: any) => void;
+  private _onDecorations?: NotificationHandler<any>;
   private _onSchemaTags?: NotificationHandler<[ServiceID, SchemaTag[]]>;
+  private _onConfigFilesFound?: NotificationHandler<ApolloConfig[]>;
 
   private projectsByFolderUri: Map<string, GraphQLProject[]> = new Map();
 
@@ -40,7 +40,7 @@ export class GraphQLWorkspace {
     this._onDiagnostics = handler;
   }
 
-  onDecorations(handler: (any: any) => void) {
+  onDecorations(handler: NotificationHandler<any>) {
     this._onDecorations = handler;
   }
 
@@ -98,23 +98,21 @@ export class GraphQLWorkspace {
 
     */
     const apolloConfigFiles: string[] = fg.sync("**/apollo.config.@(js|ts)", {
-      cwd: Uri.parse(folder.uri).fsPath,
+      cwd: URI.parse(folder.uri).fsPath,
       absolute: true,
       ignore: "**/node_modules/**"
     });
 
     apolloConfigFiles.push(
       ...fg.sync("**/package.json", {
-        cwd: Uri.parse(folder.uri).fsPath,
+        cwd: URI.parse(folder.uri).fsPath,
         absolute: true,
         ignore: "**/node_modules/**"
       })
     );
 
     // only have unique possible folders
-    const apolloConfigFolders = new Set<string>(
-      apolloConfigFiles.map(f => dirname(f))
-    );
+    const apolloConfigFolders = new Set<string>(apolloConfigFiles.map(dirname));
 
     // go from possible folders to known array of configs
     const projectConfigs = Array.from(apolloConfigFolders).map(configFolder =>
