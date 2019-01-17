@@ -44,5 +44,11 @@
       "port": 9001,
       "sourceMaps": true
     }
+  ],
+  "compounds": [
+    {
+      "name": "Extension + Server",
+      "configurations": ["Launch VS Code Extension", "Attach to TS Server"]
+    }
   ]
 }
