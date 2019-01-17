@@ -106,6 +106,8 @@ export abstract class GraphQLProject implements GraphQLSchemaProvider {
 
   protected abstract initialize(): Promise<void>[];
 
+  abstract updateConfig(config: ApolloConfig): Promise<void>[];
+
   get isReady(): boolean {
     return this._isReady;
   }
