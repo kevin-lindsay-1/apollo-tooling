@@ -4,7 +4,6 @@ import TypeScriptLoader from "@endemolshinegroup/cosmiconfig-typescript-loader";
 import { resolve } from "path";
 import { readFileSync, existsSync } from "fs";
 import { merge } from "lodash/fp";
-
 import {
   ServiceID,
   ServiceSpecifier,
@@ -139,6 +138,8 @@ export interface LoadConfigSettings {
   // config loading only works on node so we default to
   // process.cwd()
   configPath?: string;
+  configFileName?: string;
+  requireConfig?: boolean;
   name?: string;
   type?: "service" | "client";
 }
@@ -153,13 +154,14 @@ export type ConfigResult<Config> = {
 // take a config with multiple project types and return
 // an array of individual types
 export const projectsFromConfig = (
-  config: ApolloConfigFormat
+  config: ApolloConfigFormat,
+  configURI?: URI
 ): Array<ClientConfig | ServiceConfig> => {
   const configs = [];
   const { client, service, ...rest } = config;
   // XXX use casting detection
-  if (client) configs.push(new ClientConfig(config));
-  if (service) configs.push(new ServiceConfig(config));
+  if (client) configs.push(new ClientConfig(config, configURI));
+  if (service) configs.push(new ServiceConfig(config, configURI));
   return configs;
 };
 
@@ -205,7 +207,7 @@ export class ApolloConfig {
   }
 
   get projects() {
-    return projectsFromConfig(this.rawConfig);
+    return projectsFromConfig(this.rawConfig, this.configURI);
   }
 
   set tag(tag: string) {
@@ -266,17 +268,26 @@ const getServiceFromKey = (key: string | undefined): string | undefined => {
 // XXX load .env files automatically
 export const loadConfig = async ({
   configPath,
+  configFileName,
+  requireConfig = false,
   name,
   type
 }: LoadConfigSettings): Promise<ApolloConfig> => {
   const explorer = cosmiconfig(MODULE_NAME, {
-    searchPlaces: getSearchPlaces(configPath),
+    searchPlaces: getSearchPlaces(configFileName),
     loaders
   });
 
   let loadedConfig = (await explorer.search(configPath)) as ConfigResult<
     ApolloConfigFormat
   >;
+
+  if (requireConfig && !loadedConfig) {
+    throw new Error(
+      `No Apollo config found for project. For more information, please refer to:
+      https://bit.ly/2ByILPj`
+    );
+  }
 
   // add API to the env
   let engineConfig = {},
@@ -310,7 +321,7 @@ export const loadConfig = async ({
     resolvedType = "service";
   } else {
     throw new Error(
-      "Unable to resolve project type. Please add either a client or service config. For more information, please refer to https://www.apollographql.com/docs/references/apollo-config.html"
+      "Unable to resolve project type. Please add either a client or service config. For more information, please refer to https://bit.ly/2ByILPj"
     );
   }
 

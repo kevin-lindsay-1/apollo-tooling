@@ -48,19 +48,25 @@ export class GraphQLWorkspace {
     this._onSchemaTags = handler;
   }
 
-  private createProject(config: ApolloConfig, folder: WorkspaceFolder) {
+  private createProject({
+    config,
+    folder
+  }: {
+    config: ApolloConfig;
+    folder: WorkspaceFolder;
+  }) {
     const { clientIdentity } = this.config;
     const project = isClientConfig(config)
       ? new GraphQLClientProject({
           config,
           loadingHandler: this.LanguageServerLoadingHandler,
-          rootURI: URI.file(folder.uri),
+          rootURI: URI.parse(folder.uri),
           clientIdentity
         })
       : new GraphQLServiceProject({
           config: config as ServiceConfig,
           loadingHandler: this.LanguageServerLoadingHandler,
-          rootURI: URI.file(folder.uri),
+          rootURI: URI.parse(folder.uri),
           clientIdentity
         });
 
