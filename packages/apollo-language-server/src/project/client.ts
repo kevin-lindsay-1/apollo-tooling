@@ -92,7 +92,7 @@ export class GraphQLClientProject extends GraphQLProject {
   }: GraphQLClientProjectConfig) {
     const fileSet = new FileSet({
       rootPath: rootURI.fsPath,
-      includes: config.client.includes,
+      includes: [...config.client.includes, ".env", "apollo.config.js"],
       excludes: config.client.excludes
     });
 
